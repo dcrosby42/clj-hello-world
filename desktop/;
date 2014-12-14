@@ -1,0 +1,82 @@
+(ns hello-world.core
+  (:require [play-clj.core :refer :all]
+            [play-clj.g2d :refer :all]))
+
+(defn move
+  [entity direction]
+  (case direction
+    :down (assoc entity :y (dec (:y entity)))
+    :up (assoc entity :y (inc (:y entity)))
+    :right (assoc entity :x (inc (:x entity)))
+    :left (assoc entity :x (dec (:x entity)))
+    nil))
+
+(declare reset)
+
+(defscreen main-screen
+  :on-show
+  (fn [screen entities]
+    (update! screen :renderer (stage) :camera (orthographic))
+    ;(label "Hello world!" (color :white))
+    (add-timer! screen :spawn-enemy 0.1 2 5)
+    (add-timer! screen :spawn-friend 1 4 3)
+    (assoc (texture "clojure-icon.gif")
+           :x 50 :y 50 :width 100 :height 100
+           :angle 45 :origin-x 0 :origin-y 0)
+
+    )
+
+  :on-timer
+  (fn [screen entities]
+    (case (:id screen)
+      :spawn-enemy (println "SPAWN ENEMY!")
+      :spawn-friend (println "Spawn friend")
+      nil))
+
+  :on-resize
+  (fn [screen entities]
+    (height! screen 600))
+
+  :on-render
+  (fn [screen entities]
+    (clear!)
+    (render! screen entities))
+
+  :on-key-down
+  (fn [screen entities]
+    (println (:key screen))
+    (cond
+      (= (:key screen) (key-code :grave))
+      (do (println "wat") (reset))
+      (= (:key screen) (key-code :control-left))
+      (println "Control LEFT")
+      (= (:key screen) (key-code :dpad-up))
+      (move (first entities) :up)
+      (= (:key screen) (key-code :dpad-down))
+      (move (first entities) :down)
+      (= (:key screen) (key-code :dpad-right))
+      (move (first entities) :right)
+      (= (:key screen) (key-code :dpad-left))
+      (move (first entities) :left)))
+
+  :on-touch-down
+  (fn [screen entities]
+    (cond
+      (> (game :point-y) (* (game :height) (/ 2 3)))
+      (move (first entities) :up)
+      (< (game :point-y) (/ (game :height) 3))
+      (move (first entities) :down)
+      (> (game :point-x) (* (game :width) (/ 2 3)))
+      (move (first entities) :right)
+      (< (game :point-x) (/ (game :width) 3))
+      (move (first entities) :left)))
+  )
+
+(defgame hello-world-game
+  :on-create
+  (fn [this]
+    (set-screen! this main-screen)))
+
+(defn reset []
+  (println "Reset!")
+  (on-gl (set-screen! hello-world-game main-screen)))
